@@ -2,7 +2,7 @@ name: Update ICS
 
 on:
   schedule:
-    # Every month on the 15th at 00:00 Taiwan time → 16:00 UTC on the 14th
+    # Every month on the 15th at 00:00 Taiwan time (UTC+8) = 14th 16:00 UTC
     - cron: "0 16 14 * *"
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ics requests
+          pip install "icalendar==7.0.3" "requests==2.33.0"
 
       - name: Run filter script
         run: python filter_multi_ics.py

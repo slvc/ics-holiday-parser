@@ -1,5 +1,5 @@
 import requests
-from ics import Calendar, Event
+from icalendar import Calendar, Event
 import os
 
 CONFIG_DICT = {
@@ -12,19 +12,22 @@ CONFIG_DICT = {
 def filter_calendar(source_url, keywords):
     resp = requests.get(source_url)
     resp.raise_for_status()
-    raw_cal = Calendar(resp.text)
+    raw_cal = Calendar.from_ical(resp.content)
 
     official_holidays = Calendar()
     memorial_days = Calendar()
 
-    for e in raw_cal.events:
-        desc = e.description or ''
+    for component in raw_cal.walk():
+        if component.name != 'VEVENT':
+            continue
+
+        desc = str(component.get('DESCRIPTION', ''))
         matched = any(k in desc for k in keywords)
 
         if matched:
-            official_holidays.events.add(e)
+            official_holidays.add_component(component)
         else:
-            memorial_days.events.add(e)
+            memorial_days.add_component(component)
 
     return official_holidays, memorial_days
 
@@ -37,11 +40,11 @@ def main():
             region_item['keywords'],
         )
 
-        with open(f'public/{region_key}-official_holidays.ics', 'w', encoding='utf-8') as f:
-            f.writelines(official_holidays.serialize_iter())
+        with open(f'public/{region_key}-official_holidays.ics', 'wb') as f:
+            f.write(official_holidays.to_ical())
 
-        with open(f'public/{region_key}-memorial_days.ics', 'w', encoding='utf-8') as f:
-            f.writelines(memorial_days.serialize_iter())
+        with open(f'public/{region_key}-memorial_days.ics', 'wb') as f:
+            f.write(memorial_days.to_ical())
 
 if __name__ == '__main__':
     main()
